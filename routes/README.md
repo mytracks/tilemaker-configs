@@ -4,11 +4,11 @@ This config is used to extract all kinds of routes from an [OSM](https://www.ope
 
 # Prerequisites
 
-The follow this workflow you need the following tools:
+To follow this workflow you need the following tools:
 
 * [osmconvert](https://wiki.openstreetmap.org/wiki/Osmconvert)
 * [osmfilter](https://wiki.openstreetmap.org/wiki/Osmfilter)
-* [tilemaker](https://tilemaker.org)
+* [tilemaker](https://tilemaker.org) >= 2.1
 
 # Convert to o5m
 
@@ -20,7 +20,7 @@ osmconvert germany-latest.osm.pbf -o=germany-latest.o5m
 
 # Filter routes
 
-Next you have to extract just the `route` objects in order limit the file size to be processed by `tilemaker`:
+Next you have to extract just the `route` objects in order to limit the file size to be processed by `tilemaker`:
 
 ```
 osmfilter germany-latest.o5m --parameter-file=route_filter | osmconvert - -o=routes-germany.osm.pbf
