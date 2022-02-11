@@ -1,0 +1,22 @@
+{
+	"layers": {
+		"route":            { "minzoom":  10, "maxzoom": 14 }
+	},
+	"settings": {
+		"minzoom": 10,
+		"maxzoom": 14,
+		"basezoom": 14,
+		"include_ids": false,
+		"combine_below": 14,
+		"name": "OpenStreetMap Routes",
+		"version": "3.0",
+		"description": "Routes from OpenStreetMap",
+		"compress": "gzip",
+		"filemetadata": {
+			"tilejson": "2.1.0", 
+			"scheme": "xyz", 
+			"type": "baselayer", 
+			"format": "pbf"
+		   }
+	}
+}

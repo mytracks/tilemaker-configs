@@ -1,0 +1,7 @@
+*.osm
+*.o5m
+*.pbf
+*.mbtiles*
+osmfilter_tempfile*
+nohup.out
+cache
