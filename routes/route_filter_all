@@ -1,11 +1,19 @@
 --keep=
 route=bicycle
 or
-route=tram
+route=train
 or
 route=subway
 or
+route=monorail
+or
+route=tram
+or
 route=bus
+or
+route=trolleybus
+or
+route=ferry
 
 --drop-author
 
