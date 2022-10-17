@@ -84,14 +84,18 @@ function way_function(way)
 
 				local ref = way:FindInRelation("ref")
 
-				local operator = way:FindInRelation("operator")
-				if ref~="" and operator~="" then
-					way:Attribute(route.."_route_ref_"..ref, operator)
-				end
+				if ref~="" then
+					local operator = way:FindInRelation("operator")
+					if operator~="" then
+						way:Attribute(route.."_route_operator_"..ref, operator)
+					else
+						way:Attribute(route.."_route_operator_"..ref, "__unknown__")
+					end
 
-				local name = way:FindInRelation("name")
-				if ref~="" and operator~="" then
-					way:Attribute(route.."_route_ref_"..ref, operator)
+					local name = way:FindInRelation("name")
+					if name~="" then
+						way:Attribute(route.."_route_name_"..ref, operator)
+					end
 				end
 
 				-- copy attributes from relations to the dictionary 

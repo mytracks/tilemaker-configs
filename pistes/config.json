@@ -1,16 +1,17 @@
 {
 	"layers": {
-		"route": { "minzoom": 7, "maxzoom": 14, "simplify_below": 10, "simplify_level": 0.0003, "simplify_ratio": 2 }
+		"piste":            { "minzoom":  8, "maxzoom": 14 },
+		"aerialway":        { "minzoom":  8, "maxzoom": 14 }
 	},
 	"settings": {
-		"minzoom": 7,
+		"minzoom": 8,
 		"maxzoom": 14,
 		"basezoom": 14,
 		"include_ids": false,
-		"combine_below": 12,
-		"name": "OpenStreetMap Routes",
+		"combine_below": 14,
+		"name": "OpenStreetMap Winter",
 		"version": "3.0",
-		"description": "Routes from OpenStreetMap",
+		"description": "Winter and ski data from OpenStreetMap",
 		"compress": "gzip",
 		"filemetadata": {
 			"tilejson": "2.1.0", 

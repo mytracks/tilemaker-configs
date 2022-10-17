@@ -1,6 +1,6 @@
 # OSM Routes
 
-This config is used to extract all kinds of routes from an [OSM](https://www.openstreetmap.org) file and to convert it to a `mbtiles` file.
+This config is used to extract all kinds of routes from an [OSM](https://www.openstreetmap.org) file and to convert it to an `mbtiles` file.
 
 # Prerequisites
 
