@@ -7,7 +7,7 @@ This config is used to extract ski pistes, aerialwas etc. from an [OSM](https://
 First you have to extract just the relevant objects in order to limit the file size to be processed by `tilemaker`:
 
 ```
-osmfilter planet-latest.o5m --parameter-file=filter | osmconvert - -o=pistes-planet.osm.pbf
+osmfilter planet-latest.o5m --parameter-file=filter | osmconvert - -o=planet-pistes.osm.pbf
 ```
 
 # Create mbtiles

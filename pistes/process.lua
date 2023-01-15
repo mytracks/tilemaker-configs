@@ -1,17 +1,10 @@
--- Nodes will only be processed if one of these keys is present
-
-node_keys = { "piste", "aerialway" }
-
--- Initialize Lua logic
+node_keys = { "piste:type", "aerialway" }
 
 function init_function()
 end
 
--- Finalize Lua logic()
 function exit_function()
 end
-
--- Assign nodes to a layer, and set attributes, based on OSM tags
 
 function TrySetAttribute(obj, name)
 	local value = obj:Find(name)
@@ -28,7 +21,7 @@ function TrySetPisteAttribute(obj, name)
 end
 
 function node_function(node)
-	local piste = node:Find("piste")
+	local piste = node:Find("piste:type")
 	if piste~="" then
 		node:Layer("piste", false)
 		TrySetAttribute(node, "name")
@@ -44,8 +37,6 @@ function node_function(node)
 	end
 end
 
--- Similarly for ways
-
 function way_function(way)
 	local piste = way:Find("piste:type")
 	if piste~="" then
@@ -53,7 +44,9 @@ function way_function(way)
 		way:Attribute("class", piste)
 		TrySetAttribute(way, "name")
 		TrySetAttribute(way, "area")
+		TrySetAttribute(way, "landuse")
 		TrySetPisteAttribute(way, "grooming")
+		TrySetPisteAttribute(way, "ref")
 		TrySetPisteAttribute(way, "difficulty")
 	end
 
@@ -61,6 +54,6 @@ function way_function(way)
 	if aerialway~="" then
 		way:Layer("aerialway", false)
 		way:Attribute("class", aerialway)
-		way:Attribute("name", node:Find("name"))
+		way:Attribute("name", way:Find("name"))
 	end
 end
