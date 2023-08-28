@@ -13,7 +13,7 @@ osmfilter planet.o5m --parameter-file=filter | osmconvert - -o=planet-routes.osm
 Or using the provided container image:
 
 ```sh
-docker run --rm -v /data/sources:/data/sources -v config:/config -w /config mytracks/tilemaker osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-routes.osm.pbf
+docker run --rm -v /data/sources:/data/sources -v config:/config -w /config mytracks/tilemaker sh -c "osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-routes.osm.pbf"
 ```
 
 It extracts all objects that contain at least one of the following route types: bicycle, tram, train, subway, monorail, tram, bus, trolleybus, ferry

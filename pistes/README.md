@@ -13,7 +13,7 @@ osmfilter planet.o5m --parameter-file=filter | osmconvert - -o=planet-pistes.osm
 Or using the provided container image:
 
 ```sh
-docker run --rm -v /data/sources:/data/sources -v config:/config -w /config mytracks/tilemaker osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-pistes.osm.pbf
+docker run --rm -v /data/sources:/data/sources -v config:/config -w /config mytracks/tilemaker sh -c "osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-pistes.osm.pbf"
 ```
 
 # Create mbtiles
