@@ -14,8 +14,13 @@ The [pistes](./pistes/) folder contains a configuration for ski pistes.
 
 ## Preparation
 
-To process a complete planet file on a machine with not too much memory the full plant file has to filtered first using `osmfilter`. Therefore the file has to be provided as `o5m` file. To convert an `osm.pbf` to an `o5m` file you can use `osmconvert`:
+To process a complete planet file on a machine with not too much memory the full plant file has to be filtered first using `osmfilter`. Therefore the file has to be provided as `o5m` file. To convert an `osm.pbf` to an `o5m` file you can use `osmconvert`:
 
 ```sh
-osmconvert planet-latest.osm.pbf -o=planet-latest.o5m
+osmconvert planet.osm.pbf -o=planet.o5m
+```
+
+Or using the provided container image:
+```sh
+docker run -v /data/sources:/data/sources mytracks/tilemaker osmconvert /data/sources/planet.osm.pbf -o=/data/sources/planet.o5m
 ```
