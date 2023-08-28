@@ -14,3 +14,8 @@ RUN unzip tilemaker-ubuntu-22.04.zip \
 
 ADD http://m.m.i24.cc/osmconvert64 /usr/local/bin/osmconvert
 RUN chmod +x /usr/local/bin/osmconvert
+
+ADD http://m.m.i24.cc/osmfilter64 /usr/local/bin/osmfilter
+RUN chmod +x /usr/local/bin/osmfilter
+
+USER 1000
