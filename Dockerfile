@@ -45,4 +45,6 @@ USER 1000
 
 ENV JAVA_TOOL_OPTIONS="-Xmx32g"
 
+ADD tilemaker-configs /tilemaker-configs
+
 CMD /usr/local/bin/update_tiles.sh

@@ -7,6 +7,7 @@ This config is used to extract all kinds of routes from an [OSM](https://www.ope
 First you have to extract just the `route` objects in order to limit the file size to be processed by `tilemaker`:
 
 ```
+cd config
 osmfilter planet.o5m --parameter-file=filter | osmconvert - -o=planet-routes.osm.pbf
 ```
 
@@ -29,6 +30,6 @@ tilemaker --input planet-routes.osm.pbf --output planet-routes.mbtiles
 Or using the provided container image:
 
 ```sh
-docker run --rm -v /data/sources:/data/sources -v /data/mbtiles:/data/mbtiles tilemaker --input /data/sources/planet-routes.osm.pbf --output /data/mbtiles/planet-routes.mbtiles
+docker run --rm -v /data/sources:/data/sources -v config:/config -w /config -v /data/mbtiles:/data/mbtiles mytracks/tilemaker tilemaker --input /data/sources/planet-routes.osm.pbf --output /data/mbtiles/planet-routes.mbtiles
 ```
 
