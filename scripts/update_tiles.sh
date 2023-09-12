@@ -50,34 +50,41 @@ if [ /data/mbtiles/openmaptiles-new.mbtiles -ot /data/sources/planet.osm.pbf ]; 
     rm -f /data/mbtiles/openmaptiles-new.mbtiles
     sh -c "cd / && java -jar /opt/planetiler.jar --osm-path=/data/sources/planet.osm.pbf --mbtiles=/data/mbtiles/openmaptiles-new.mbtiles"
 else
-    echo "/data/mbtiles/openmaptiles-new.mbtiles up-to-date"
+    echo "/data/mbtiles/openmaptiles-new.mbtiles is up-to-date"
 fi
 
 # create planet.o5m
-if [ /data/mbtiles/planet.o5m -ot /data/sources/planet.osm.pbf ]; then
-    echo "Generating /data/mbtiles/planet.o5m"
-    rm -f /data/mbtiles/planet.o5m
+if [ /data/sources/planet.o5m -ot /data/sources/planet.osm.pbf ]; then
+    echo "Generating /data/sources/planet.o5m"
+    rm -f /data/sources/planet.o5m
     osmconvert /data/sources/planet.osm.pbf -o=/data/sources/planet.o5m
 else
-    echo "/data/mbtiles/planet.o5m up-to-date"
+    echo "/data/mbtiles/planet.o5m is up-to-date"
 fi
 
-# create planet-pistes.osm.pbf
-if [ /data/mbtiles/planet-pistes.osm.pbf -ot /data/sources/planet.o5m ]; then
-    echo "Generating /data/mbtiles/planet-pistes.osm.pbf"
-    rm -f /data/mbtiles/planet-pistes.osm.pbf
-    osmfilter /data/sources/planet.o5m --parameter-file=/tilemaker-configs/pistes/filter | osmconvert - -o=/data/sources/planet-pistes.osm.pbf
-else
-    echo "/data/mbtiles/planet-pistes.osm.pbf up-to-date"
-fi
+tilemaker () {
+    type=$1
 
-# create planet-pistes-new.mbtiles
-if [ /data/mbtiles/planet-pistes-new.mbtiles -ot /data/sources/planet-pistes.osm.pbf ]; then
-    echo "Generating /data/mbtiles/planet-pistes-new.mbtiles"
-    sh -c "cd /tilemaker-configs/pistes/config && tilemaker --input /data/sources/planet-pistes.osm.pbf --output /data/mbtiles/planet-pistes-new.mbtiles"
-else
-    echo "/data/mbtiles/planet-pistes-new.mbtiles up-to-date"
-fi
+    # create planet-$type.osm.pbf
+    if [ /data/sources/planet-$type.osm.pbf -ot /data/sources/planet.o5m ]; then
+        echo "Generating /data/sources/planet-$type.osm.pbf"
+        rm -f /data/sources/planet-$type.osm.pbf
+        sh -c "cd /tilemaker-configs/$type/config && osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-$type.osm.pbf"
+    else
+        echo "/data/mbsourcestiles/planet-$type.osm.pbf is up-to-date"
+    fi
+
+    # create planet-$type-new.mbtiles
+    if [ /data/mbtiles/planet-$type-new.mbtiles -ot /data/sources/planet-$type.osm.pbf ]; then
+        echo "Generating /data/mbtiles/planet-$type-new.mbtiles"
+        sh -c "cd /tilemaker-configs/$type/config && tilemaker --input /data/sources/planet-$type.osm.pbf --output /data/mbtiles/planet-$type-new.mbtiles"
+    else
+        echo "/data/mbtiles/planet-$type-new.mbtiles is up-to-date"
+    fi
+}
+
+tilemaker "pistes"
+tilemaker "routes"
 
 echo "Ready."
 exit 0
