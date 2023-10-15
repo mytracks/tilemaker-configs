@@ -26,7 +26,7 @@ if [ -e /data/sources/planet.osm.pbf ]; then
     diffDays=$((($now - $planetDate) / 60 / 60 / 24))
 
     # Check if older than 7 days
-    if [[ $diff -gt 7 ]]; then
+    if [[ $diffDays -gt 7 ]]; then
         echo "/data/sources/planet.osm.pbf tool old. Loading latest version."
         loadPlanetOsm=true
     else
