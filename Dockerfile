@@ -6,7 +6,7 @@ RUN apt-get update \
 ## Install Planetiler
 WORKDIR /src
 
-RUN git clone --recurse-submodules https://github.com/onthegomap/planetiler.git
+RUN git clone --branch v0.7.0 --recurse-submodules https://github.com/onthegomap/planetiler.git
 
 WORKDIR /src/planetiler
 
@@ -37,6 +37,9 @@ RUN chmod +x /usr/local/bin/osmconvert
 ## Install osmfilter
 ADD http://m.m.i24.cc/osmfilter64 /usr/local/bin/osmfilter
 RUN chmod +x /usr/local/bin/osmfilter
+
+## Install kubectl
+RUN cd /usr/local/bin && curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl && chmod +x /usr/local/bin/kubectl
 
 ## Install scripts
 ADD scripts/*.sh /usr/local/bin

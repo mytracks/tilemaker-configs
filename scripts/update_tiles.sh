@@ -25,9 +25,9 @@ if [ -e /data/sources/planet.osm.pbf ]; then
     now=$(date +%s)
     diffDays=$((($now - $planetDate) / 60 / 60 / 24))
 
-    # Check if older than 7 days
-    if [[ $diffDays -gt 7 ]]; then
-        echo "/data/sources/planet.osm.pbf tool old. Loading latest version."
+    # Check if older than 2 days
+    if [[ $diffDays -gt 2 ]]; then
+        echo "/data/sources/planet.osm.pbf too old. Loading latest version."
         loadPlanetOsm=true
     else
         echo "/data/sources/planet.osm.pbf is up-to-date."
@@ -45,12 +45,12 @@ if $loadPlanetOsm; then
 fi
 
 # create openmaptiles-new.mbtiles
-if [ /data/mbtiles/openmaptiles-new.mbtiles -ot /data/sources/planet.osm.pbf ]; then
+if [ /data/mbtiles/openmaptiles.mbtiles -ot /data/sources/planet.osm.pbf ]; then
     echo "Generating /data/mbtiles/openmaptiles-new.mbtiles"
     rm -f /data/mbtiles/openmaptiles-new.mbtiles
     sh -c "cd / && java -jar /opt/planetiler.jar --osm-path=/data/sources/planet.osm.pbf --mbtiles=/data/mbtiles/openmaptiles-new.mbtiles"
 else
-    echo "/data/mbtiles/openmaptiles-new.mbtiles is up-to-date"
+    echo "/data/mbtiles/openmaptiles.mbtiles is up-to-date"
 fi
 
 # create planet.o5m
@@ -71,20 +71,46 @@ tilemaker () {
         rm -f /data/sources/planet-$type.osm.pbf
         sh -c "cd /tilemaker-configs/$type/config && osmfilter /data/sources/planet.o5m --parameter-file=filter | osmconvert - -o=/data/sources/planet-$type.osm.pbf"
     else
-        echo "/data/mbsourcestiles/planet-$type.osm.pbf is up-to-date"
+        echo "/data/sources/planet-$type.osm.pbf is up-to-date"
     fi
 
     # create planet-$type-new.mbtiles
-    if [ /data/mbtiles/planet-$type-new.mbtiles -ot /data/sources/planet-$type.osm.pbf ]; then
+    if [ /data/mbtiles/planet-$type.mbtiles -ot /data/sources/planet-$type.osm.pbf ]; then
         echo "Generating /data/mbtiles/planet-$type-new.mbtiles"
         sh -c "cd /tilemaker-configs/$type/config && tilemaker --input /data/sources/planet-$type.osm.pbf --output /data/mbtiles/planet-$type-new.mbtiles"
     else
-        echo "/data/mbtiles/planet-$type-new.mbtiles is up-to-date"
+        echo "/data/mbtiles/planet-$type.mbtiles is up-to-date"
     fi
 }
 
 tilemaker "pistes"
 tilemaker "routes"
+
+activate () {
+    type=$1
+
+    if [ -e /data/mbtiles/planet-$type-new.mbtiles ]; then
+        # Delete old one if exists
+        if [ -e /data/mbtiles/planet-$type-old.mbtiles ]; then
+            rm /data/mbtiles/planet-$type-old.mbtiles
+        fi
+        # Make the currently active the old one
+        if [ -e /data/mbtiles/planet-$type.mbtiles ]; then
+            mv /data/mbtiles/planet-$type.mbtiles /data/mbtiles/planet-$type-old.mbtiles
+        fi
+        # Make the new the active one
+        mv /data/mbtiles/planet-$type-new.mbtiles /data/mbtiles/planet-$type.mbtiles
+        echo "New planet-$type.mbtiles activated."
+    fi
+}
+
+# Activate new files
+activate "openmaptiles"
+activate "routes"
+activate "pistes"
+
+# Restarting tileserver-gl
+kubectl rollout restart deployment tileserver-gl
 
 echo "Ready."
 exit 0
