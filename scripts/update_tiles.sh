@@ -4,6 +4,7 @@
 set -e
 
 loadPlanetOsm=false
+restartTileserver=false
 
 # Check if source folder exists
 if [ ! -d /data/sources ]; then
@@ -44,13 +45,13 @@ if $loadPlanetOsm; then
     curl -L https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf -o /data/sources/planet.osm.pbf
 fi
 
-# create openmaptiles-new.mbtiles
-if [ /data/mbtiles/openmaptiles.mbtiles -ot /data/sources/planet.osm.pbf ]; then
-    echo "Generating /data/mbtiles/openmaptiles-new.mbtiles"
-    rm -f /data/mbtiles/openmaptiles-new.mbtiles
-    sh -c "cd / && java -jar /opt/planetiler.jar --osm-path=/data/sources/planet.osm.pbf --mbtiles=/data/mbtiles/openmaptiles-new.mbtiles"
+# create planet-openmaptiles-new.mbtiles
+if [ /data/mbtiles/planet-openmaptiles.mbtiles -ot /data/sources/planet.osm.pbf ]; then
+    echo "Generating /data/mbtiles/planet-openmaptiles-new.mbtiles"
+    rm -f /data/mbtiles/planet-openmaptiles-new.mbtiles
+    sh -c "cd / && java -jar /opt/planetiler.jar --osm-path=/data/sources/planet.osm.pbf --mbtiles=/data/mbtiles/planet-openmaptiles-new.mbtiles"
 else
-    echo "/data/mbtiles/openmaptiles.mbtiles is up-to-date"
+    echo "/data/mbtiles/planet-openmaptiles.mbtiles is up-to-date"
 fi
 
 # create planet.o5m
@@ -101,6 +102,8 @@ activate () {
         # Make the new the active one
         mv /data/mbtiles/planet-$type-new.mbtiles /data/mbtiles/planet-$type.mbtiles
         echo "New planet-$type.mbtiles activated."
+
+        restartTileserver=true
     fi
 }
 
@@ -110,7 +113,12 @@ activate "routes"
 activate "pistes"
 
 # Restarting tileserver-gl
-kubectl rollout restart deployment tileserver-gl
+if $restartTileserver; then
+    echo "Restarting tileserver-gl."
+    kubectl rollout restart deployment tileserver-gl
+else
+    echo "No need to restart tileserver-gl."
+fi
 
 echo "Ready."
 exit 0
