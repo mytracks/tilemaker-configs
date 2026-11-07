@@ -174,6 +174,7 @@ public class Transportation implements
       entry(FieldValues.CLASS_RACEWAY, 13),
       entry(FieldValues.CLASS_TERTIARY, 10),
       entry(FieldValues.CLASS_BUSWAY, 11),
+      entry(FieldValues.CLASS_BUS_GUIDEWAY, 11),
       entry(FieldValues.CLASS_SECONDARY, 9),
       entry(FieldValues.CLASS_PRIMARY, 7),
       entry(FieldValues.CLASS_TRUNK, 5),
@@ -348,6 +349,10 @@ public class Transportation implements
       }
       int minzoom = getMinzoom(element, highwayClass);
 
+      if (minzoom > config.maxzoom()) {
+        return;
+      }
+
       boolean highwayRamp = isLink(highway);
       Integer rampAboveZ12 = (highwayRamp || element.isRamp()) ? 1 : null;
       Integer rampBelowZ12 = highwayRamp ? 1 : null;
@@ -356,8 +361,10 @@ public class Transportation implements
         // main attributes at all zoom levels (used for grouping <= z8)
         .setAttr(Fields.CLASS, highwayClass)
         .setAttr(Fields.SUBCLASS, highwaySubclass(highwayClass, element.publicTransport(), highway))
-        .setAttr(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()))
         .setAttr(Fields.NETWORK, networkType != null ? networkType.name : null)
+        // TODO: including brunnel at low zooms leads to some large 300-400+kb z4-7 tiles, instead
+        //       we should only set brunnel if the line is above a certain length
+        .setAttr(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()))
         // z8+
         .setAttrWithMinzoom(Fields.EXPRESSWAY, element.expressway() && !"motorway".equals(highway) ? 1 : null, 8)
         // z9+
@@ -418,9 +425,7 @@ public class Transportation implements
       String baseClass = highwayClass.replace("_construction", "");
       minzoom = switch (baseClass) {
         case FieldValues.CLASS_SERVICE -> isDrivewayOrParkingAisle(service(element.service())) ? 14 : 11;
-        // case FieldValues.CLASS_TRACK, FieldValues.CLASS_PATH -> routeRank == 1 ? 12 :
-        //   (z13Paths || !nullOrEmpty(element.name()) || routeRank <= 2 || !nullOrEmpty(element.sacScale())) ? 13 : 14;
-        default -> MINZOOMS.get(baseClass);
+        default -> MINZOOMS.getOrDefault(baseClass, Integer.MAX_VALUE);
       };
     }
 
@@ -542,7 +547,7 @@ public class Transportation implements
     int onewayId = 1;
     for (var item : items) {
       var oneway = item.attrs().get(Fields.ONEWAY);
-      if (oneway instanceof Integer i && ONEWAY_VALUES.contains(i)) {
+      if (oneway instanceof Number n && ONEWAY_VALUES.contains(n.intValue())) {
         item.attrs().put(LIMIT_MERGE_TAG, onewayId++);
       }
     }
