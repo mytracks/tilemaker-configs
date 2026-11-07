@@ -255,6 +255,12 @@ public class Transportation implements
 
   @Override
   public List<OsmRelationInfo> preprocessOsmRelation(OsmElement.Relation relation) {
+    List<OsmRelationInfo> result = new ArrayList<>(2);
+    // For routing in the myTracks app: the marked routes a way belongs to (see process).
+    MarkedRoute marked = MarkedRoute.from(relation);
+    if (marked != null) {
+      result.add(marked);
+    }
     if (relation.hasTag("route", "road", "hiking")) {
       RouteNetwork networkType = null;
       String network = relation.getString("network");
@@ -277,10 +283,10 @@ public class Transportation implements
       };
 
       if (network != null || rank < 3) {
-        return List.of(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, relation.id()));
+        result.add(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, relation.id()));
       }
     }
-    return null;
+    return result.isEmpty() ? null : result;
   }
 
   List<RouteRelation> getRouteRelations(Tables.OsmHighwayLinestring element) {
@@ -397,6 +403,19 @@ public class Transportation implements
         .setPixelToleranceAtMaxZoom(0)
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
+
+      // z14 only: the marked hiking, cycle and mountain bike routes the way belongs to, each as the
+      // highest network level among its relations of that kind, so that the myTracks app can
+      // prefer them when it plans routes.
+      byte[] levels = {-1, -1, -1};
+      for (var member : element.source().relationInfo(MarkedRoute.class)) {
+        MarkedRoute route = member.relation();
+        levels[route.kind()] = (byte) Math.max(levels[route.kind()], route.level());
+      }
+      feature
+        .setAttrWithMinzoom("route_hiking", MarkedRoute.levelName(levels[MarkedRoute.HIKING]), 14)
+        .setAttrWithMinzoom("route_bicycle", MarkedRoute.levelName(levels[MarkedRoute.BICYCLE]), 14)
+        .setAttrWithMinzoom("route_mtb", MarkedRoute.levelName(levels[MarkedRoute.MTB]), 14);
 
       if (isFootwayOrSteps(highway)) {
         feature
@@ -573,6 +592,48 @@ public class Transportation implements
 
     RouteNetwork(String name) {
       this.name = name;
+    }
+  }
+
+  /**
+   * A marked hiking (also {@code route=foot}), cycle or mountain bike route, for routing in the myTracks app: its kind
+   * and its network level, 0 when the relation names none.
+   */
+  record MarkedRoute(byte kind, byte level, @Override long id) implements OsmRelationInfo {
+    static final byte HIKING = 0;
+    static final byte BICYCLE = 1;
+    static final byte MTB = 2;
+    private static final String[] LEVEL_NAMES = {"yes", "local", "regional", "national", "international"};
+
+    static MarkedRoute from(OsmElement.Relation relation) {
+      byte kind = switch (coalesce(relation.getString("route"), "")) {
+        case "hiking", "foot" -> HIKING;
+        case "bicycle" -> BICYCLE;
+        case "mtb" -> MTB;
+        default -> -1;
+      };
+      if (kind < 0) {
+        return null;
+      }
+      // Mountain bike routes mostly use the cycling levels.
+      byte level = switch (coalesce(relation.getString("network"), "")) {
+        case "iwn", "icn" -> 4;
+        case "nwn", "ncn" -> 3;
+        case "rwn", "rcn" -> 2;
+        case "lwn", "lcn" -> 1;
+        default -> 0;
+      };
+      return new MarkedRoute(kind, level, relation.id());
+    }
+
+    /** The attribute value of a level, or null for none (-1). */
+    static String levelName(byte level) {
+      return level < 0 ? null : LEVEL_NAMES[level];
+    }
+
+    @Override
+    public long estimateMemoryUsageBytes() {
+      return CLASS_HEADER_BYTES + 2 + MemoryEstimator.estimateSizeLong(id);
     }
   }
 

@@ -39,3 +39,8 @@ at zoom 14:
   Bridges and tunnels still share no point with the ways they cross, as in OSM.
 * **More tags at zoom 14:** `sac_scale`, `trail_visibility`, `tracktype`, `smoothness`,
   `oneway_bicycle` (from `oneway:bicycle`) and `incline`.
+* **Marked routes at zoom 14:** `route_hiking` (from `route=hiking` and `route=foot` relations),
+  `route_bicycle` (`route=bicycle`) and `route_mtb` (`route=mtb`), each the highest network level
+  among the way's relations of that kind: `international`, `national`, `regional`, `local`
+  (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Unlike the `routes` tile set,
+  routes without a `ref` are included.
