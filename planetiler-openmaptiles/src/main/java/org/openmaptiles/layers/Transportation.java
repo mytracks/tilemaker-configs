@@ -174,6 +174,7 @@ public class Transportation implements
       entry(FieldValues.CLASS_RACEWAY, 13),
       entry(FieldValues.CLASS_TERTIARY, 10),
       entry(FieldValues.CLASS_BUSWAY, 11),
+      entry(FieldValues.CLASS_BUS_GUIDEWAY, 11),
       entry(FieldValues.CLASS_SECONDARY, 9),
       entry(FieldValues.CLASS_PRIMARY, 7),
       entry(FieldValues.CLASS_TRUNK, 5),
@@ -254,6 +255,12 @@ public class Transportation implements
 
   @Override
   public List<OsmRelationInfo> preprocessOsmRelation(OsmElement.Relation relation) {
+    List<OsmRelationInfo> result = new ArrayList<>(2);
+    // For routing in the myTracks app: the marked routes a way belongs to (see process).
+    MarkedRoute marked = MarkedRoute.from(relation);
+    if (marked != null) {
+      result.add(marked);
+    }
     if (relation.hasTag("route", "road", "hiking")) {
       RouteNetwork networkType = null;
       String network = relation.getString("network");
@@ -276,10 +283,10 @@ public class Transportation implements
       };
 
       if (network != null || rank < 3) {
-        return List.of(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, relation.id()));
+        result.add(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, relation.id()));
       }
     }
-    return null;
+    return result.isEmpty() ? null : result;
   }
 
   List<RouteRelation> getRouteRelations(Tables.OsmHighwayLinestring element) {
@@ -348,6 +355,10 @@ public class Transportation implements
       }
       int minzoom = getMinzoom(element, highwayClass);
 
+      if (minzoom > config.maxzoom()) {
+        return;
+      }
+
       boolean highwayRamp = isLink(highway);
       Integer rampAboveZ12 = (highwayRamp || element.isRamp()) ? 1 : null;
       Integer rampBelowZ12 = highwayRamp ? 1 : null;
@@ -356,8 +367,10 @@ public class Transportation implements
         // main attributes at all zoom levels (used for grouping <= z8)
         .setAttr(Fields.CLASS, highwayClass)
         .setAttr(Fields.SUBCLASS, highwaySubclass(highwayClass, element.publicTransport(), highway))
-        .setAttr(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()))
         .setAttr(Fields.NETWORK, networkType != null ? networkType.name : null)
+        // TODO: including brunnel at low zooms leads to some large 300-400+kb z4-7 tiles, instead
+        //       we should only set brunnel if the line is above a certain length
+        .setAttr(Fields.BRUNNEL, brunnel(element.isBridge(), element.isTunnel(), element.isFord()))
         // z8+
         .setAttrWithMinzoom(Fields.EXPRESSWAY, element.expressway() && !"motorway".equals(highway) ? 1 : null, 8)
         // z9+
@@ -375,9 +388,34 @@ public class Transportation implements
         .setAttrWithMinzoom(Fields.SERVICE, service, 12)
         .setAttrWithMinzoom(Fields.ONEWAY, nullIfInt(element.isOneway(), 0), 12)
         .setAttrWithMinzoom(Fields.SURFACE, surface(element.surface()), 12)
+        // z14 only: OSM tags for routing on foot and by bicycle in the myTracks app, which plans
+        // hiking and cycling routes from these tiles (difficulty, visibility, surface quality,
+        // cycling against a oneway, steepness)
+        .setAttrWithMinzoom("sac_scale", nullIfEmpty(element.source().getString("sac_scale")), 14)
+        .setAttrWithMinzoom("trail_visibility", nullIfEmpty(element.source().getString("trail_visibility")), 14)
+        .setAttrWithMinzoom("tracktype", nullIfEmpty(element.source().getString("tracktype")), 14)
+        .setAttrWithMinzoom("smoothness", nullIfEmpty(element.source().getString("smoothness")), 14)
+        .setAttrWithMinzoom("oneway_bicycle", nullIfEmpty(element.source().getString("oneway:bicycle")), 14)
+        .setAttrWithMinzoom("incline", nullIfEmpty(element.source().getString("incline")), 14)
         .setMinPixelSize(0) // merge during post-processing, then limit by size
+        // Rendering simplifies each way on its own before postProcess merges them; at z14 that
+        // too drops a junction's vertex from a way running straight through it (see postProcess)
+        .setPixelToleranceAtMaxZoom(0)
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
+
+      // z14 only: the marked hiking, cycle and mountain bike routes the way belongs to, each as the
+      // highest network level among its relations of that kind, so that the myTracks app can
+      // prefer them when it plans routes.
+      byte[] levels = {-1, -1, -1};
+      for (var member : element.source().relationInfo(MarkedRoute.class)) {
+        MarkedRoute route = member.relation();
+        levels[route.kind()] = (byte) Math.max(levels[route.kind()], route.level());
+      }
+      feature
+        .setAttrWithMinzoom("route_hiking", MarkedRoute.levelName(levels[MarkedRoute.HIKING]), 14)
+        .setAttrWithMinzoom("route_bicycle", MarkedRoute.levelName(levels[MarkedRoute.BICYCLE]), 14)
+        .setAttrWithMinzoom("route_mtb", MarkedRoute.levelName(levels[MarkedRoute.MTB]), 14);
 
       if (isFootwayOrSteps(highway)) {
         feature
@@ -406,9 +444,7 @@ public class Transportation implements
       String baseClass = highwayClass.replace("_construction", "");
       minzoom = switch (baseClass) {
         case FieldValues.CLASS_SERVICE -> isDrivewayOrParkingAisle(service(element.service())) ? 14 : 11;
-        // case FieldValues.CLASS_TRACK, FieldValues.CLASS_PATH -> routeRank == 1 ? 12 :
-        //   (z13Paths || !nullOrEmpty(element.name()) || routeRank <= 2 || !nullOrEmpty(element.sacScale())) ? 13 : 14;
-        default -> MINZOOMS.get(baseClass);
+        default -> MINZOOMS.getOrDefault(baseClass, Integer.MAX_VALUE);
       };
     }
 
@@ -518,7 +554,11 @@ public class Transportation implements
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items) {
-    double tolerance = config.tolerance(zoom);
+    // No simplification at the highest zoom: simplifying the merged lines drops a junction's
+    // vertex from a way that runs straight through it, so the ways meeting there no longer share
+    // a point (about 0.4 m off at zoom 14). Routing from the tiles needs those shared points; a
+    // bridge or tunnel still shares none with the way it crosses, as in OSM.
+    double tolerance = zoom >= config.maxzoomForRendering() ? 0 : config.tolerance(zoom);
     double minLength = coalesce(MIN_LENGTH.apply(zoom), 0).doubleValue();
 
     // don't merge road segments with oneway tag
@@ -526,7 +566,7 @@ public class Transportation implements
     int onewayId = 1;
     for (var item : items) {
       var oneway = item.attrs().get(Fields.ONEWAY);
-      if (oneway instanceof Integer i && ONEWAY_VALUES.contains(i)) {
+      if (oneway instanceof Number n && ONEWAY_VALUES.contains(n.intValue())) {
         item.attrs().put(LIMIT_MERGE_TAG, onewayId++);
       }
     }
@@ -552,6 +592,48 @@ public class Transportation implements
 
     RouteNetwork(String name) {
       this.name = name;
+    }
+  }
+
+  /**
+   * A marked hiking (also {@code route=foot}), cycle or mountain bike route, for routing in the myTracks app: its kind
+   * and its network level, 0 when the relation names none.
+   */
+  record MarkedRoute(byte kind, byte level, @Override long id) implements OsmRelationInfo {
+    static final byte HIKING = 0;
+    static final byte BICYCLE = 1;
+    static final byte MTB = 2;
+    private static final String[] LEVEL_NAMES = {"yes", "local", "regional", "national", "international"};
+
+    static MarkedRoute from(OsmElement.Relation relation) {
+      byte kind = switch (coalesce(relation.getString("route"), "")) {
+        case "hiking", "foot" -> HIKING;
+        case "bicycle" -> BICYCLE;
+        case "mtb" -> MTB;
+        default -> -1;
+      };
+      if (kind < 0) {
+        return null;
+      }
+      // Mountain bike routes mostly use the cycling levels.
+      byte level = switch (coalesce(relation.getString("network"), "")) {
+        case "iwn", "icn" -> 4;
+        case "nwn", "ncn" -> 3;
+        case "rwn", "rcn" -> 2;
+        case "lwn", "lcn" -> 1;
+        default -> 0;
+      };
+      return new MarkedRoute(kind, level, relation.id());
+    }
+
+    /** The attribute value of a level, or null for none (-1). */
+    static String levelName(byte level) {
+      return level < 0 ? null : LEVEL_NAMES[level];
+    }
+
+    @Override
+    public long estimateMemoryUsageBytes() {
+      return CLASS_HEADER_BYTES + 2 + MemoryEstimator.estimateSizeLong(id);
     }
   }
 

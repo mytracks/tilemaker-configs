@@ -24,3 +24,23 @@ Or using the provided container image:
 ```sh
 docker run -v /data/sources:/data/sources mytracks/tilemaker osmconvert /data/sources/planet.osm.pbf -o=/data/sources/planet.o5m
 ```
+
+## OpenMapTiles with Planetiler
+
+`planetiler-openmaptiles/` holds layers of the OpenMapTiles profile that replace Planetiler's own
+when the container image is built (see the `Dockerfile`). `Transportation.java` is adapted for
+route planning on foot and by bicycle in the myTracks app, which reads the `transportation` layer
+at zoom 14:
+
+* **No simplification at zoom 14.** Simplifying dropped a junction's vertex from a way running
+  straight through it, so that the ways meeting there no longer shared a point. Planetiler
+  simplifies twice, each way when it renders the tile and the merged lines in `postProcess`; both
+  are off at zoom 14 for roads and paths.
+  Bridges and tunnels still share no point with the ways they cross, as in OSM.
+* **More tags at zoom 14:** `sac_scale`, `trail_visibility`, `tracktype`, `smoothness`,
+  `oneway_bicycle` (from `oneway:bicycle`) and `incline`.
+* **Marked routes at zoom 14:** `route_hiking` (from `route=hiking` and `route=foot` relations),
+  `route_bicycle` (`route=bicycle`) and `route_mtb` (`route=mtb`), each the highest network level
+  among the way's relations of that kind: `international`, `national`, `regional`, `local`
+  (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Unlike the `routes` tile set,
+  routes without a `ref` are included.
