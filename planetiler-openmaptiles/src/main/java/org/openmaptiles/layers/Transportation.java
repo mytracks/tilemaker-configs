@@ -375,6 +375,15 @@ public class Transportation implements
         .setAttrWithMinzoom(Fields.SERVICE, service, 12)
         .setAttrWithMinzoom(Fields.ONEWAY, nullIfInt(element.isOneway(), 0), 12)
         .setAttrWithMinzoom(Fields.SURFACE, surface(element.surface()), 12)
+        // z14 only: OSM tags for routing on foot and by bicycle in the myTracks app, which plans
+        // hiking and cycling routes from these tiles (difficulty, visibility, surface quality,
+        // cycling against a oneway, steepness)
+        .setAttrWithMinzoom("sac_scale", nullIfEmpty(element.source().getString("sac_scale")), 14)
+        .setAttrWithMinzoom("trail_visibility", nullIfEmpty(element.source().getString("trail_visibility")), 14)
+        .setAttrWithMinzoom("tracktype", nullIfEmpty(element.source().getString("tracktype")), 14)
+        .setAttrWithMinzoom("smoothness", nullIfEmpty(element.source().getString("smoothness")), 14)
+        .setAttrWithMinzoom("oneway_bicycle", nullIfEmpty(element.source().getString("oneway:bicycle")), 14)
+        .setAttrWithMinzoom("incline", nullIfEmpty(element.source().getString("incline")), 14)
         .setMinPixelSize(0) // merge during post-processing, then limit by size
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
@@ -518,7 +527,11 @@ public class Transportation implements
 
   @Override
   public List<VectorTile.Feature> postProcess(int zoom, List<VectorTile.Feature> items) {
-    double tolerance = config.tolerance(zoom);
+    // No simplification at the highest zoom: simplifying the merged lines drops a junction's
+    // vertex from a way that runs straight through it, so the ways meeting there no longer share
+    // a point (about 0.4 m off at zoom 14). Routing from the tiles needs those shared points; a
+    // bridge or tunnel still shares none with the way it crosses, as in OSM.
+    double tolerance = zoom >= config.maxzoomForRendering() ? 0 : config.tolerance(zoom);
     double minLength = coalesce(MIN_LENGTH.apply(zoom), 0).doubleValue();
 
     // don't merge road segments with oneway tag
