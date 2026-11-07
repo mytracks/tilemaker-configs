@@ -385,6 +385,9 @@ public class Transportation implements
         .setAttrWithMinzoom("oneway_bicycle", nullIfEmpty(element.source().getString("oneway:bicycle")), 14)
         .setAttrWithMinzoom("incline", nullIfEmpty(element.source().getString("incline")), 14)
         .setMinPixelSize(0) // merge during post-processing, then limit by size
+        // Rendering simplifies each way on its own before postProcess merges them; at z14 that
+        // too drops a junction's vertex from a way running straight through it (see postProcess)
+        .setPixelToleranceAtMaxZoom(0)
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
 

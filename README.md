@@ -32,8 +32,10 @@ when the container image is built (see the `Dockerfile`). `Transportation.java` 
 route planning on foot and by bicycle in the myTracks app, which reads the `transportation` layer
 at zoom 14:
 
-* **No simplification at zoom 14.** Simplifying the merged lines dropped a junction's vertex from
-  a way running straight through it, so that the ways meeting there no longer shared a point.
+* **No simplification at zoom 14.** Simplifying dropped a junction's vertex from a way running
+  straight through it, so that the ways meeting there no longer shared a point. Planetiler
+  simplifies twice, each way when it renders the tile and the merged lines in `postProcess`; both
+  are off at zoom 14 for roads and paths.
   Bridges and tunnels still share no point with the ways they cross, as in OSM.
 * **More tags at zoom 14:** `sac_scale`, `trail_visibility`, `tracktype`, `smoothness`,
   `oneway_bicycle` (from `oneway:bicycle`) and `incline`.
