@@ -42,5 +42,6 @@ at zoom 14:
 * **Marked routes at zoom 14:** `route_hiking` (from `route=hiking` and `route=foot` relations),
   `route_bicycle` (`route=bicycle`) and `route_mtb` (`route=mtb`), each the highest network level
   among the way's relations of that kind: `international`, `national`, `regional`, `local`
-  (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Unlike the `routes` tile set,
-  routes without a `ref` are included.
+  (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Routes without a `ref` are
+  included. The app prefers only routes with a level, and the `routes` tile set shows exactly those
+  as cycle routes on the map (see its README).

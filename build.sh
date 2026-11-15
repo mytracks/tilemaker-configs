@@ -12,5 +12,6 @@ podman build --ulimit nofile=65536:65536 -t mytracks/tilemaker .
 # java -jar /opt/planetiler.jar --osm-path=/data/sources/planet.osm.pbf --mbtiles=/data/mbtiles/planet-openmaptiles-spike.mbtiles
 
 # Tag and push to docker.io
-# podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:2026-11-07
-# podman push docker.io/mytracks/tilemaker:2026-11-07
+# podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:2026-11-15
+# podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:release
+# podman push docker.io/mytracks/tilemaker:release
