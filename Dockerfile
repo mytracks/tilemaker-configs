@@ -12,8 +12,6 @@ WORKDIR /src/planetiler
 
 RUN git submodule update --init
 
-RUN unset MAVEN_CONFIG && ./mvnw -DskipTests=true --projects planetiler-dist -am package
-
 ADD planetiler-openmaptiles/src/main/java/org/openmaptiles/layers/*.java planetiler-openmaptiles/src/main/java/org/openmaptiles/layers/
 
 RUN unset MAVEN_CONFIG && ./mvnw -DskipTests=true --projects planetiler-dist -am package
