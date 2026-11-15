@@ -19,6 +19,17 @@ docker run --rm -v /data/sources:/data/sources -v config:/config -w /config mytr
 
 It extracts all objects that contain at least one of the following route types: bicycle, tram, train, subway, monorail, tram, bus, trolleybus, ferry
 
+## Which relations become routes
+
+* **Cycle routes** (`route=bicycle`) need a network level, `network` = `icn`, `ncn`, `rcn` or
+  `lcn` (or the walking network's `iwn` … `lwn`), with or without a `ref`. A relation without a level,
+  such as a basic cycle network's, is left out. These are the cycle routes that the myTracks app
+  prefers when it plans routes from the OpenMapTiles build (`route_bicycle` in its
+  `transportation` layer, see the main README), so that the map shows the same ones. A way on such a
+  route gets `bicycle_route=yes` and `bicycle_route_level`, the highest level among its cycle
+  routes: `local`, `regional`, `national` or `international`.
+* **All other routes** need a `ref`.
+
 # Create mbtiles
 
 Now the `mbtiles` file can be created using `tilemaker`:

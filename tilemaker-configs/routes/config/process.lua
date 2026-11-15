@@ -10,6 +10,23 @@ way_attributes = { "name", "bicycle", "foot", "access", "smoothness", "surface",
 -- route attributes to be copied
 route_attributes = { "name", "colour", "operator", "lcn", "lcn_ref", "icn", "icn_ref", "rcn", "rcn_ref", "ncn", "ncn_ref", "ref" }
 
+-- Network levels of marked routes, as the openmaptiles build ranks them for routing in the myTracks
+-- app (`MarkedRoute` in planetiler-openmaptiles' Transportation.java), so that the map shows the
+-- cycle routes route planning prefers. Mountain bike routes mostly use the cycling levels.
+network_levels = {
+	iwn = 4, icn = 4,
+	nwn = 3, ncn = 3,
+	rwn = 2, rcn = 2,
+	lwn = 1, lcn = 1
+}
+level_names = { "local", "regional", "national", "international" }
+
+-- A cycle route counts only with a network level: one without, such as a basic cycle network's
+-- relation, is not a route route planning prefers, and the map shows what route planning prefers.
+function IsCycleRouteWithoutLevel(route, network)
+	return route=="bicycle" and network_levels[network]==nil
+end
+
 function init_function()
 end
 
@@ -72,6 +89,7 @@ function way_function(way)
 
 		-- iterate of relations in order to copy attributes
 		local attributes = {} -- dictionary with attributes from all relations
+		local bicycle_level = 0 -- the highest network level among the way's cycle routes
 		while true do
 			local rel = way:NextRelation()
 			if not rel then break end
@@ -79,8 +97,17 @@ function way_function(way)
 			-- read the type of route, such as 'bicycle'
 			local route = way:FindInRelation("route")
 
-			if route~="" then
+			-- relation_scan_function accepts no cycle route without a level, but a relation
+			-- accepted for another route type may still carry route=bicycle in theory
+			if route~="" and not IsCycleRouteWithoutLevel(route, way:FindInRelation("network")) then
 				way:Attribute(route.."_route", "yes")
+
+				if route=="bicycle" then
+					local level = network_levels[way:FindInRelation("network")]
+					if level > bicycle_level then
+						bicycle_level = level
+					end
+				end
 
 				local ref = way:FindInRelation("ref")
 
@@ -94,7 +121,7 @@ function way_function(way)
 
 					local name = way:FindInRelation("name")
 					if name~="" then
-						way:Attribute(route.."_route_name_"..ref, operator)
+						way:Attribute(route.."_route_name_"..ref, name)
 					end
 				end
 
@@ -110,6 +137,10 @@ function way_function(way)
 					end
 				end		
 			end
+		end
+
+		if bicycle_level > 0 then
+			way:Attribute("bicycle_route_level", level_names[bicycle_level])
 		end
 
 		-- copy attributes from dictionary to the way object
@@ -133,10 +164,16 @@ end
 
 function relation_scan_function(relation)
 	if relation:Find("type")=="route" then
-		local ref = relation:Find("ref")
+		local route = relation:Find("route")
 
-		if ref~="" then
-			-- accept all routes with a ref number
+		if route=="bicycle" then
+			-- accept cycle routes with a network level, with or without a ref, as the
+			-- openmaptiles build does for route planning
+			if not IsCycleRouteWithoutLevel(route, relation:Find("network")) then
+				relation:Accept()
+			end
+		elseif relation:Find("ref")~="" then
+			-- accept all other routes with a ref number
 			relation:Accept()
 		end
 	end
