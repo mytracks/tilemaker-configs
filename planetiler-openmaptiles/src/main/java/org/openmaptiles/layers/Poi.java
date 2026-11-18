@@ -177,6 +177,54 @@ public class Poi implements
       .setPointLabelGridPixelSize(14, 64)
       .setSortKey(rankOrder)
       .setMinZoom(minzoom(element.subclass(), element.mappingKey()));
+    putDetails(element.source(), output);
+  }
+
+  /** The tags the myTracks app shows on a place's card, offline (change {@code add-poi-attributes}). */
+  private static final List<String> DETAIL_TAGS = List.of(
+    "opening_hours", "phone", "website", "wheelchair", "cuisine", "operator", "seasonal",
+    "drinking_water", "shelter_type", "fee"
+  );
+  /** Counts among them, as numbers. */
+  private static final List<String> DETAIL_NUMBERS = List.of("beds", "capacity");
+  /** Where a tag is often kept under another key instead. */
+  private static final Map<String, String> DETAIL_ALTERNATIVES = Map.of(
+    "phone", "contact:phone",
+    "website", "contact:website"
+  );
+  /** Values longer than this are cut, so that a long text cannot grow a tile. */
+  private static final int DETAIL_MAX_LENGTH = 255;
+  /** Only the zoom the app's place index reads and the map shows at street level. */
+  private static final int DETAIL_ZOOM = 14;
+
+  /** The place details at zoom 14 only; a feature without a tag carries nothing for it. */
+  private static void putDetails(com.onthegomap.planetiler.reader.SourceFeature source, FeatureCollector.Feature output) {
+    for (String key : DETAIL_TAGS) {
+      String value = detail(source.getTag(key));
+      if (value == null && DETAIL_ALTERNATIVES.containsKey(key)) {
+        value = detail(source.getTag(DETAIL_ALTERNATIVES.get(key)));
+      }
+      if (value != null) {
+        output.setAttrWithMinzoom(key, value, DETAIL_ZOOM);
+      }
+    }
+    for (String key : DETAIL_NUMBERS) {
+      Long number = Parse.parseLongOrNull(source.getTag(key));
+      if (number != null && number > 0) {
+        output.setAttrWithMinzoom(key, number, DETAIL_ZOOM);
+      }
+    }
+  }
+
+  private static String detail(Object value) {
+    if (value == null) {
+      return null;
+    }
+    String text = value.toString().strip();
+    if (text.isEmpty()) {
+      return null;
+    }
+    return text.length() > DETAIL_MAX_LENGTH ? text.substring(0, DETAIL_MAX_LENGTH) : text;
   }
 
   @Override
