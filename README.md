@@ -45,3 +45,11 @@ at zoom 14:
   (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Routes without a `ref` are
   included. The app prefers only routes with a level, and the `routes` tile set shows exactly those
   as cycle routes on the map (see its README).
+
+`Poi.java` adds the details the myTracks app shows on a place's card, offline:
+
+* **Place details at zoom 14:** `opening_hours`, `phone` (else `contact:phone`), `website` (else
+  `contact:website`), `wheelchair`, `cuisine`, `operator`, `seasonal`, `drinking_water`,
+  `shelter_type` and `fee` as the data has them, trimmed and cut at 255 characters, and `beds` and
+  `capacity` as numbers. Only zoom 14 carries them, the zoom the app's place index reads; a POI
+  without a tag carries nothing for it.
