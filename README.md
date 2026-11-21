@@ -45,6 +45,10 @@ at zoom 14:
   (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Routes without a `ref` are
   included. The app prefers only routes with a level, and the `routes` tile set shows exactly those
   as cycle routes on the map (see its README).
+  Planetiler keeps only one relation info per relation id (the last one a profile returns), so a
+  hiking relation that OpenMapTiles also turns into a `RouteRelation` (one with a `network`,
+  `osmc:symbol` or `colour`) carries its marked route inside that `RouteRelation`; returned on its
+  own, it was replaced, and such hiking routes had no `route_hiking`.
 
 `Poi.java` adds the details the myTracks app shows on a place's card, offline:
 
