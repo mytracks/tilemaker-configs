@@ -34,8 +34,22 @@ It extracts all objects that contain at least one of the following route types: 
   (`<kind>_name`, `<kind>_ref` ...), which only the legacy app reads for the kinds it knows.
 * **All other routes** need a `ref`.
 
-Stop signs (nodes with `highway=stop` and no `railway`) are left out of the points: their class
-`stop` would be drawn as a tram or railway stop (`railway=stop`).
+## Which nodes become points
+
+Only the stops that the map styles draw, from the zoom at which they draw them. `class` is the
+node's `highway` if that is one of them, otherwise its `railway`, so that a tram stop that is also a
+crossing (`highway=crossing`, `railway=tram_stop`) is a tram stop:
+
+| `class`             | from zoom |
+|---------------------|-----------|
+| `bus_stop`          | 11        |
+| `tram_stop`, `stop` | 12        |
+
+Crossings, signals, switches and all other nodes are left out, so a style that is to draw another
+class or to draw one of these earlier needs a change of `stop_minzooms` in `process.lua` first. Stop
+signs are left out too, as their class `stop` would be drawn as a tram or railway stop: these are
+the nodes with `highway=stop` whose `railway` is none of the classes above, also one at a level
+crossing (`railway=level_crossing`).
 
 ## Which routes a way belongs to
 

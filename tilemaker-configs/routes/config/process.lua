@@ -103,17 +103,35 @@ function FindTag(obj, tags)
 	return nil, nil
 end
 
--- highway=stop is a stop sign. Its class "stop" would be drawn with the symbol of railway=stop, and
--- the ways of hiking and MTB routes bring many of them into the extract.
+-- The only points the map styles draw, with the zoom from which they draw them (layers
+-- poi_bus_w_publictransport and poi_railway_w_publictransport). All others, such as crossings,
+-- signals and switches, would be most of a tile's points without ever being seen.
+stop_minzooms = { bus_stop = 11, tram_stop = 12, stop = 12 }
+
+-- highway=stop is a stop sign, also at a level crossing, unless railway says that it is a stop. Its
+-- class "stop" would be drawn with the symbol of railway=stop, and the ways of hiking and MTB routes
+-- bring many of them into the extract.
 function IsStopSign(node)
-	return node:Find("highway")=="stop" and node:Find("railway")==""
+	return node:Find("highway")=="stop" and stop_minzooms[node:Find("railway")]==nil
+end
+
+-- FindTag would not do: a tram stop can be a crossing as well, and its highway would hide it.
+function FindStop(node)
+	for _,key in ipairs({ "highway", "railway" }) do
+		local value = node:Find(key)
+		if stop_minzooms[value]~=nil then
+			return key, value
+		end
+	end
+
+	return nil, nil
 end
 
 function node_function(node)
-	-- check whether highway or railway tag exists
-	local obj_type, obj = FindTag(node, {"highway", "railway"})
+	local obj_type, obj = FindStop(node)
 	if obj_type~=nil and not IsStopSign(node) then
 		node:Layer("route", false)
+		node:MinZoom(stop_minzooms[obj])
 		node:Attribute("obj_type", obj_type)
 		node:Attribute("class", obj)
 
