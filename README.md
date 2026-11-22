@@ -39,15 +39,12 @@ at zoom 14:
   Bridges and tunnels still share no point with the ways they cross, as in OSM.
 * **More tags at zoom 14:** `sac_scale`, `trail_visibility`, `tracktype`, `smoothness`,
   `oneway_bicycle` (from `oneway:bicycle`) and `incline`.
-* **Marked routes from zoom 11 on:** `route_hiking` (from `route=hiking` and `route=foot` relations),
+* **Marked routes at zoom 14:** `route_hiking` (from `route=hiking` and `route=foot` relations),
   `route_bicycle` (`route=bicycle`) and `route_mtb` (`route=mtb`), each the highest network level
   among the way's relations of that kind: `international`, `national`, `regional`, `local`
   (from `iwn`/`icn` … `lwn`/`lcn`), or `yes` without a known level. Routes without a `ref` are
   included. The app prefers only routes with a level, and the `routes` tile set shows exactly those
-  as cycle routes on the map (see its README). They start at zoom 11, where paths and tracks first
-  appear, so that the app can draw hiking and MTB routes before zoom 14; a way on a route then no
-  longer merges with its neighbors off the route at zoom 11 to 13, which makes those tiles a little
-  larger.
+  as cycle routes on the map (see its README).
   Planetiler keeps only one relation info per relation id (the last one a profile returns), so a
   hiking relation that OpenMapTiles also turns into a `RouteRelation` (one with a `network`,
   `osmc:symbol` or `colour`) carries its marked route inside that `RouteRelation`; returned on its
