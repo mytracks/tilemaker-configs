@@ -152,6 +152,8 @@ public class Transportation implements
   private static final Set<Integer> ONEWAY_VALUES = Set.of(-1, 1);
   private static final String LIMIT_MERGE_TAG = "__limit_merge";
   private final AtomicBoolean loggedNoGb = new AtomicBoolean(false);
+  /** The first zoom whose ways carry {@code route_hiking}, {@code route_bicycle} and {@code route_mtb}. */
+  private static final int MARKED_ROUTE_MINZOOM = 11;
   private final boolean z13Paths;
   private final Map<String, Integer> MINZOOMS;
   private final Stats stats;
@@ -409,9 +411,11 @@ public class Transportation implements
         .setSortKey(element.zOrder())
         .setMinZoom(minzoom);
 
-      // z14 only: the marked hiking, cycle and mountain bike routes the way belongs to, each as the
+      // z11+: the marked hiking, cycle and mountain bike routes the way belongs to, each as the
       // highest network level among its relations of that kind, so that the myTracks app can
-      // prefer them when it plans routes.
+      // prefer them when it plans routes (at z14) and draw them on the map from z11 on, where
+      // paths and tracks first appear. It costs some merging of ways at z11 to z13, as a way on a
+      // route no longer merges with its neighbors off the route.
       byte[] levels = {-1, -1, -1};
       List<MarkedRoute> markedRoutes = new ArrayList<>();
       for (var member : element.source().relationInfo(MarkedRoute.class)) {
@@ -428,9 +432,9 @@ public class Transportation implements
         levels[route.kind()] = (byte) Math.max(levels[route.kind()], route.level());
       }
       feature
-        .setAttrWithMinzoom("route_hiking", MarkedRoute.levelName(levels[MarkedRoute.HIKING]), 14)
-        .setAttrWithMinzoom("route_bicycle", MarkedRoute.levelName(levels[MarkedRoute.BICYCLE]), 14)
-        .setAttrWithMinzoom("route_mtb", MarkedRoute.levelName(levels[MarkedRoute.MTB]), 14);
+        .setAttrWithMinzoom("route_hiking", MarkedRoute.levelName(levels[MarkedRoute.HIKING]), MARKED_ROUTE_MINZOOM)
+        .setAttrWithMinzoom("route_bicycle", MarkedRoute.levelName(levels[MarkedRoute.BICYCLE]), MARKED_ROUTE_MINZOOM)
+        .setAttrWithMinzoom("route_mtb", MarkedRoute.levelName(levels[MarkedRoute.MTB]), MARKED_ROUTE_MINZOOM);
 
       if (isFootwayOrSteps(highway)) {
         feature
