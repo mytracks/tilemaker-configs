@@ -13,5 +13,5 @@ podman build --ulimit nofile=65536:65536 -t mytracks/tilemaker .
 
 # Tag and push to docker.io
 # podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:2026-11-15
-# podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:release
+podman tag localhost/mytracks/tilemaker:latest docker.io/mytracks/tilemaker:release
 # podman push docker.io/mytracks/tilemaker:release
