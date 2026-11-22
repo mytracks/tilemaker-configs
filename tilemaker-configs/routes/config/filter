@@ -6,6 +6,12 @@ or
 route=subway
 or
 route=bus
+or
+route=hiking
+or
+route=foot
+or
+route=mtb
 
 --drop-author
 
