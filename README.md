@@ -6,6 +6,8 @@ The configuration in the [routes](./routes/) folder extracts all kinds of _route
 
 The [pistes](./pistes/) folder contains a configuration for ski pistes.
 
+The [drive](./tilemaker-configs/drive/) folder contains the configuration of the `drive` tile set: roads and buildings for the driving game osmDrive, for a region and at zoom 14 only.
+
 ## Prerequisites
 
 * [osmconvert](https://wiki.openstreetmap.org/wiki/Osmconvert)

@@ -87,6 +87,22 @@ tilemaker () {
 tilemaker "pistes"
 tilemaker "routes"
 
+# The drive tile set covers a region, the box in its config's file "region". It is cut from the
+# planet and built in cells by build_drive.sh, since tilemaker cannot hold the region in memory
+# at once. Its file carries "planet" in its name like the others, so that one activate function
+# serves all.
+drive () {
+    if [ /data/mbtiles/planet-drive.mbtiles -ot /data/sources/planet.o5m ]; then
+        echo "Generating /data/mbtiles/planet-drive-new.mbtiles"
+        rm -f /data/mbtiles/planet-drive-new.mbtiles
+        DRIVE_WORK=/data/sources/drive-work build_drive.sh /data/sources/planet.o5m /data/mbtiles/planet-drive-new.mbtiles
+    else
+        echo "/data/mbtiles/planet-drive.mbtiles is up-to-date"
+    fi
+}
+
+drive
+
 activate () {
     type=$1
 
@@ -111,6 +127,7 @@ activate () {
 activate "openmaptiles"
 activate "routes"
 activate "pistes"
+activate "drive"
 
 # Restarting tileserver-gl
 if $restartTileserver; then

@@ -1,0 +1,28 @@
+{
+	"layers": {
+		"road":     { "minzoom": 14, "maxzoom": 14 },
+		"building": { "minzoom": 14, "maxzoom": 14 }
+	},
+	"settings": {
+		"minzoom": 14,
+		"maxzoom": 14,
+		"basezoom": 14,
+		"include_ids": false,
+		"combine_below": 0,
+		"high_resolution": true,
+		"bounding_box": [5.5, 45.5, 17.5, 55.5],
+		"name": "OpenStreetMap Drive",
+		"version": "1.0",
+		"description": "Roads and buildings from OpenStreetMap for the driving game osmDrive",
+		"compress": "gzip",
+		"metadata": {
+			"attribution": "<a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">&copy; OpenStreetMap contributors</a>"
+		},
+		"filemetadata": {
+			"tilejson": "2.1.0",
+			"scheme": "xyz",
+			"type": "baselayer",
+			"format": "pbf"
+		}
+	}
+}

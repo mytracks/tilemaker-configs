@@ -1,0 +1,10 @@
+--keep=
+highway=
+or
+building=
+or
+building:part=
+
+--drop-author
+
+--drop-version
