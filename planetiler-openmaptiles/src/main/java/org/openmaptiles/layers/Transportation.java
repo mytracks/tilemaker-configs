@@ -255,12 +255,13 @@ public class Transportation implements
 
   @Override
   public List<OsmRelationInfo> preprocessOsmRelation(OsmElement.Relation relation) {
-    List<OsmRelationInfo> result = new ArrayList<>(2);
+    List<OsmRelationInfo> result = new ArrayList<>(1);
     // For routing in the myTracks app: the marked routes a way belongs to (see process).
+    // Planetiler keeps one info per relation id, the last one returned, so a hiking route that also
+    // gets a RouteRelation carries its MarkedRoute inside it; returned on its own it would be
+    // replaced, and ways would lose route_hiking on every hiking route with a network or symbol.
     MarkedRoute marked = MarkedRoute.from(relation);
-    if (marked != null) {
-      result.add(marked);
-    }
+    boolean markedIncluded = false;
     if (relation.hasTag("route", "road", "hiking")) {
       RouteNetwork networkType = null;
       String network = relation.getString("network");
@@ -283,8 +284,12 @@ public class Transportation implements
       };
 
       if (network != null || rank < 3) {
-        result.add(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, relation.id()));
+        result.add(new RouteRelation(coalesce(ref, ""), network, networkType, (byte) rank, marked, relation.id()));
+        markedIncluded = true;
       }
+    }
+    if (marked != null && !markedIncluded) {
+      result.add(marked);
     }
     return result.isEmpty() ? null : result;
   }
@@ -318,7 +323,7 @@ public class Transportation implements
                   Transportation.RouteNetwork.GB_TRUNK;
               String network = "motorway".equals(element.highway()) ? "omt-gb-motorway" : "omt-gb-trunk";
               result.add(new RouteRelation(refMatcher.group(), network, networkType, (byte) -1,
-                0));
+                null, 0));
             }
           } catch (GeometryException e) {
             e.log(stats, "omt_transportation_name_gb_test",
@@ -408,8 +413,18 @@ public class Transportation implements
       // highest network level among its relations of that kind, so that the myTracks app can
       // prefer them when it plans routes.
       byte[] levels = {-1, -1, -1};
+      List<MarkedRoute> markedRoutes = new ArrayList<>();
       for (var member : element.source().relationInfo(MarkedRoute.class)) {
-        MarkedRoute route = member.relation();
+        markedRoutes.add(member.relation());
+      }
+      // Hiking routes that are also OpenMapTiles route relations carry theirs inside (see
+      // preprocessOsmRelation).
+      for (var member : element.source().relationInfo(RouteRelation.class)) {
+        if (member.relation().marked() != null) {
+          markedRoutes.add(member.relation().marked());
+        }
+      }
+      for (MarkedRoute route : markedRoutes) {
         levels[route.kind()] = (byte) Math.max(levels[route.kind()], route.level());
       }
       feature
@@ -643,6 +658,8 @@ public class Transportation implements
     String network,
     RouteNetwork networkType,
     byte rank,
+    /** The myTracks marked route of the same relation, or null; see preprocessOsmRelation. */
+    MarkedRoute marked,
     @Override long id
   ) implements OsmRelationInfo, Comparable<RouteRelation> {
 
@@ -650,6 +667,7 @@ public class Transportation implements
     public long estimateMemoryUsageBytes() {
       return CLASS_HEADER_BYTES +
         MemoryEstimator.estimateSize(rank) +
+        POINTER_BYTES + (this.marked == null ? 0 : this.marked.estimateMemoryUsageBytes()) +
         POINTER_BYTES + estimateSize(ref) +
         POINTER_BYTES + estimateSize(network) +
         POINTER_BYTES + // networkType

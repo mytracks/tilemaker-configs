@@ -114,8 +114,8 @@ activate "pistes"
 
 # Restarting tileserver-gl
 if $restartTileserver; then
-    echo "Restarting tileserver-gl."
-    kubectl rollout restart deployment tileserver-gl
+    echo "Restarting tileserver-gl (currently disabled)."
+    #kubectl rollout restart deployment tileserver-gl
 else
     echo "No need to restart tileserver-gl."
 fi
