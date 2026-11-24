@@ -10,7 +10,7 @@
 		"include_ids": false,
 		"combine_below": 0,
 		"high_resolution": true,
-		"bounding_box": [5.5, 45.5, 17.5, 55.5],
+		"bounding_box": [-180, -85.0511, 180, 85.0511],
 		"name": "OpenStreetMap Drive",
 		"version": "1.0",
 		"description": "Roads and buildings from OpenStreetMap for the driving game osmDrive",

@@ -87,9 +87,8 @@ tilemaker () {
 tilemaker "pistes"
 tilemaker "routes"
 
-# The drive tile set covers a region, the box in its config's file "region". It is cut from the
-# planet and built in cells by build_drive.sh, since tilemaker cannot hold the region in memory
-# at once. Its file carries "planet" in its name like the others, so that one activate function
+# The drive tile set covers the box in its config's file "region", which is the whole world. It
+# is built in cells by build_drive.sh, since tilemaker cannot hold that much in memory at once. Its file carries "planet" in its name like the others, so that one activate function
 # serves all.
 drive () {
     if [ /data/mbtiles/planet-drive.mbtiles -ot /data/sources/planet.o5m ]; then

@@ -12,11 +12,12 @@ repository. A change of a layer or an attribute here needs a change there.
 ## What the tile set is
 
 * **Zoom 14 only.** The game builds its world in pieces of one zoom-14 tile each.
-* **A region, not the planet:** one bounding box, in `config/region` as
-  `west,south,east,north`. (`bounding_box` in `config.json` says the same for a run of tilemaker
-  by hand; the build script replaces it cell by cell.) The tile set's `bounds` are the tiles
-  completely inside the box; the game takes roads and buildings from `drive` for every tile
-  inside the bounds and from OpenMapTiles elsewhere.
+* **A region:** one bounding box, in `config/region` as `west,south,east,north`. It is set to the
+  whole world, `-180,-85.0511,180,85.0511` (Web Mercator ends at that latitude); a smaller box
+  builds a part. (`bounding_box` in `config.json` says the same for a run of tilemaker by hand;
+  the build script replaces it cell by cell.) The tile set's `bounds` are the tiles completely
+  inside the box; the game takes roads and buildings from `drive` for every tile inside the
+  bounds and from OpenMapTiles elsewhere.
 * **Nothing is simplified or merged.** Every point of a way is in the tile, and ways that share a
   point in OSM share it in the tile. The game builds a road network from the lines.
 * **The finest grid** tilemaker writes (`high_resolution`, 8192 units per tile, about 0.2 m in
@@ -51,9 +52,9 @@ Compared with cutting every cell from the region (around Munich, 20 cells of 8 t
 2026-11-23): the same cells with input files of the same size, the same tiles and bounds, and in
 every tile the same features; in 518 tiles they are written in a different order.
 
-For the whole planet the region is `-180,-85.0511,180,85.0511` (Web Mercator ends at that
-latitude). The source is then filtered without being cut first, which would only copy it. This
-has not been run yet: the time and the size of the result are not known.
+For the whole world the source is filtered without being cut first, which would only copy it.
+This has not been run yet: the time and the size of the result are not known. The tiles so far
+were built for Central Europe, `5.5,45.5,17.5,55.5`.
 
 The tiles built are those that lie completely inside the region's box, and the file's `bounds` are
 the box of these tiles: slightly smaller than `config/region`.
