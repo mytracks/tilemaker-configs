@@ -41,6 +41,19 @@ repository. A change of a layer or an attribute here needs a change there.
    degree of longitude. tilemaker is told to write exactly the cell's tiles, because where two
    runs write the same tile, merging puts both contents into it instead of replacing it. The
    data of a cell reaches 0.05 degrees beyond it, so that every tile is complete.
+4. The cells are reached by **cutting in quarters**: the region into four pieces, each piece into
+   four again, until a piece is one cell. Every cut reads its whole input, so cutting each cell
+   from the region would read the region once per cell, more than 100,000 times for the planet.
+   In quarters, each level reads the data about once, and a piece without data (open sea) ends
+   its whole branch. Temporary files need about twice the size of the filtered region.
+
+Compared with cutting every cell from the region (around Munich, 20 cells of 8 tiles, 858 tiles,
+2026-11-23): the same cells with input files of the same size, the same tiles and bounds, and in
+every tile the same features; in 518 tiles they are written in a different order.
+
+For the whole planet the region is `-180,-85.0511,180,85.0511` (Web Mercator ends at that
+latitude). The source is then filtered without being cut first, which would only copy it. This
+has not been run yet: the time and the size of the result are not known.
 
 The tiles built are those that lie completely inside the region's box, and the file's `bounds` are
 the box of these tiles: slightly smaller than `config/region`.
