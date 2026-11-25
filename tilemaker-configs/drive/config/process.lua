@@ -4,7 +4,8 @@
 -- derived: no height from levels, no width from lanes or class. The game estimates what is
 -- missing, so a better estimate never needs a new build. See the README for the schema.
 
-node_keys = {}
+-- Nodes with one of these keys are looked at: what stands at a road and says who drives when.
+node_keys = { "highway", "traffic_calming" }
 
 function init_function()
 end
@@ -12,7 +13,46 @@ end
 function exit_function()
 end
 
+-- What a node on a road is, for the layer of points.
+point_kinds = {
+	traffic_signals = "signals", stop = "stop", give_way = "give_way", crossing = "crossing",
+	mini_roundabout = "mini_roundabout", turning_circle = "turning_circle", turning_loop = "turning_circle"
+}
+
+-- The direction of travel a sign or signal on a way's node is for, along the way's line or
+-- against it. Compass points and angles say where a sign faces, not which traffic it is for.
+point_directions = { forward = "forward", backward = "backward", both = "both" }
+
 function node_function(node)
+	local kind = point_kinds[node:Find("highway")]
+	local calming = node:Find("traffic_calming")
+	if calming=="no" then calming = "" end
+	if kind==nil then
+		if calming=="" then return end
+		kind = "calming"
+	end
+
+	node:Layer("road_point", false)
+	node:Attribute("kind", kind)
+	SetText(node, "calming", calming)
+
+	local direction = node:Find("direction")
+	if kind=="signals" and node:Find("traffic_signals:direction")~="" then
+		direction = node:Find("traffic_signals:direction")
+	end
+	SetText(node, "direction", point_directions[direction] or "")
+
+	if kind=="crossing" then
+		local crossing = node:Find("crossing")
+		SetText(node, "crossing", crossing)
+		SetText(node, "markings", node:Find("crossing:markings"))
+		if crossing=="traffic_signals" or node:Find("crossing:signals")=="yes" then
+			node:AttributeNumeric("signals", 1)
+		end
+		if node:Find("crossing:island")=="yes" then
+			node:AttributeNumeric("island", 1)
+		end
+	end
 end
 
 -- The game's road classes. Roads of one class are alike enough for it to share a default width.
@@ -94,6 +134,64 @@ function PlainNumber(value)
 	return number
 end
 
+-- A whole number of lanes, or nil.
+function Lanes(value)
+	local lanes = PlainNumber(value)
+	if lanes~=nil and lanes==math.floor(lanes) and lanes>=1 and lanes<=16 then
+		return lanes
+	end
+	return nil
+end
+
+-- What the lanes of one direction are for, as mapped: "left|through|through;right". Lower case
+-- and without spaces; nil if it holds anything but the words, ";" and "|", or is very long.
+function TurnLanes(value)
+	if value=="" then return nil end
+	local turns = string.lower((string.gsub(value, "%s", "")))
+	if #turns>120 or string.find(turns, "[^a-z_;|]") then return nil end
+	return turns
+end
+
+-- Where a way's line lies among its lanes, as mapped: "right_of:1", "middle_of:2",
+-- "transition". Nil for anything else.
+function Placement(value)
+	if value=="transition" then return value end
+	if string.match(value, "^left_of:%d+$") or string.match(value, "^right_of:%d+$") or string.match(value, "^middle_of:%d+$") then
+		return value
+	end
+	return nil
+end
+
+sidewalk_values = { yes = "yes", no = "no", none = "no", separate = "separate" }
+
+-- Whether the road has a pavement on its left and on its right, seen along its line: "yes",
+-- "no", or "separate" for one that is mapped as a way of its own. Nil where nothing is said.
+-- The tags of one side come before the tag for both.
+function Sidewalks(way)
+	local left, right
+	local sidewalk = way:Find("sidewalk")
+	if sidewalk=="both" or sidewalk=="yes" then
+		left, right = "yes", "yes"
+	elseif sidewalk=="left" then
+		left, right = "yes", "no"
+	elseif sidewalk=="right" then
+		left, right = "no", "yes"
+	elseif sidewalk=="no" or sidewalk=="none" then
+		left, right = "no", "no"
+	elseif sidewalk=="separate" then
+		left, right = "separate", "separate"
+	end
+	local both = sidewalk_values[way:Find("sidewalk:both")]
+	if both~=nil then
+		left, right = both, both
+	end
+	left = sidewalk_values[way:Find("sidewalk:left")] or left
+	right = sidewalk_values[way:Find("sidewalk:right")] or right
+	return left, right
+end
+
+priority_roads = { designated = true, yes_unposted = true, ["end"] = true }
+
 function SetText(way, name, value)
 	if value~="" then
 		way:Attribute(name, value)
@@ -172,9 +270,29 @@ function WriteRoad(way, highway)
 		way:AttributeNumeric("oneway", 1)
 	end
 
-	local lanes = PlainNumber(way:Find("lanes"))
-	if lanes~=nil and lanes==math.floor(lanes) and lanes>=1 and lanes<=16 then
-		way:AttributeNumeric("lanes", lanes)
+	SetNumber(way, "lanes", Lanes(way:Find("lanes")))
+	-- Lanes per direction of the way's line, the lane both directions turn from, and what each
+	-- lane is for. Forward is along the line, also where "oneway" is -1.
+	SetNumber(way, "lanes_forward", Lanes(way:Find("lanes:forward")))
+	SetNumber(way, "lanes_backward", Lanes(way:Find("lanes:backward")))
+	SetNumber(way, "lanes_both_ways", Lanes(way:Find("lanes:both_ways")))
+	SetText(way, "turn_lanes", TurnLanes(way:Find("turn:lanes")) or "")
+	SetText(way, "turn_lanes_forward", TurnLanes(way:Find("turn:lanes:forward")) or "")
+	SetText(way, "turn_lanes_backward", TurnLanes(way:Find("turn:lanes:backward")) or "")
+	SetText(way, "placement", Placement(way:Find("placement")) or "")
+	if way:Find("lane_markings")=="no" then
+		way:AttributeNumeric("lane_markings", 0)
+	end
+
+	local left, right = Sidewalks(way)
+	SetText(way, "sidewalk_left", left or "")
+	SetText(way, "sidewalk_right", right or "")
+
+	-- Two lines that are the two carriageways of one street have its name or number in common.
+	SetText(way, "name", way:Find("name"))
+	SetText(way, "ref", way:Find("ref"))
+	if priority_roads[way:Find("priority_road")] then
+		way:Attribute("priority_road", way:Find("priority_road"))
 	end
 	SetNumber(way, "width", Meters(way:Find("width")))
 	SetNumber(way, "maxspeed", KilometersPerHour(way:Find("maxspeed")))

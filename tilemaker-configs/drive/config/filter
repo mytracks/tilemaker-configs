@@ -4,6 +4,8 @@ or
 building=
 or
 building:part=
+or
+traffic_calming=
 
 --drop-author
 
