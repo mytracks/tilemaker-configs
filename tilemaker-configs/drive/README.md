@@ -12,9 +12,10 @@ repository. A change of a layer or an attribute here needs a change there.
 ## What the tile set is
 
 * **Zoom 14 only.** The game builds its world in pieces of one zoom-14 tile each.
-* **A region:** one bounding box, in `config/region` as `west,south,east,north`. It is set to the
-  whole world, `-180,-85.0511,180,85.0511` (Web Mercator ends at that latitude); a smaller box
-  builds a part. (`bounding_box` in `config.json` says the same for a run of tilemaker by hand;
+* **A region:** one bounding box, in `config/region` as `west,south,east,north`. It is set to
+  Munich and its surroundings, `11.45,48.05,11.75,48.25` (144 tiles), so that a build takes
+  minutes while the tile set's content is still changing; `-180,-85.0511,180,85.0511` is the
+  whole world (Web Mercator ends at that latitude). (`bounding_box` in `config.json` says the same for a run of tilemaker by hand;
   the build script replaces it cell by cell.) The tile set's `bounds` are the tiles completely
   inside the box; the game takes roads and buildings from `drive` for every tile inside the
   bounds and from OpenMapTiles elsewhere.
@@ -53,8 +54,8 @@ Compared with cutting every cell from the region (around Munich, 20 cells of 8 t
 every tile the same features; in 518 tiles they are written in a different order.
 
 For the whole world the source is filtered without being cut first, which would only copy it.
-This has not been run yet: the time and the size of the result are not known. The tiles so far
-were built for Central Europe, `5.5,45.5,17.5,55.5`.
+This has not been run yet: the time and the size of the result are not known. Before the region
+was set to Munich, tiles were built for Central Europe, `5.5,45.5,17.5,55.5`.
 
 The tiles built are those that lie completely inside the region's box, and the file's `bounds` are
 the box of these tiles: slightly smaller than `config/region`.
